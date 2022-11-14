@@ -12,7 +12,7 @@ def optimize_summary(
     samples: int = 5,
     l2: float = 0.01,
 ):
-    sum_embs = sum_embs.detach().requires_grad_(True)
+    sum_embs = sum_embs.detach().clone().requires_grad_(True)
     optim = torch.optim.Adam([sum_embs], lr=lr)
     discrete_emb = lm.discretize(sum_embs.data)
 
@@ -20,7 +20,8 @@ def optimize_summary(
         loss = l2 * (sum_embs**2).sum()
         for _ in range(samples):
             noised_embs = sum_embs + torch.randn_like(sum_embs) * noise
-            loss += lm.loss_emb(noised_embs, validation) / samples
+            print(loss.shape, lm.loss_emb(noised_embs, validation).shape)
+            loss = loss + lm.loss_emb(noised_embs, validation) / samples
         print(f"loss = {loss.item()}, std(emb) = {sum_embs.std()}", flush=True)
         optim.zero_grad()
         loss.backward()

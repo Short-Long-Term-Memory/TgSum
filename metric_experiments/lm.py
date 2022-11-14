@@ -9,6 +9,41 @@ from transformers import (
 from transformers.modeling_outputs import CausalLMOutput
 
 
+class DummyTokenizer(PreTrainedTokenizer):
+    def __init__(self, alphabet: int):
+        self.alphabet = alphabet
+
+    def __call__(self, text: str, return_tensors: str) -> torch.Tensor:
+        assert return_tensors == "pt"
+        ids = [min(self.alphabet - 1, ord(ch)) for ch in text]
+        return {"input_ids": torch.tensor(ids).unsqueeze(0)}
+
+    def decode(self, ids: torch.Tensor) -> str:
+        assert ids.dim() == 1
+        return "".join(chr(i) for i in ids)
+
+
+class DummyModel(PreTrainedModel):
+    def __init__(self, alphabet: int):
+        self.alphabet = alphabet
+        self.device_ = "cpu"
+    
+    def to(self, device: str):
+        self.device_ = device
+        return self
+
+    def __call__(
+        self, inputs_embeds: torch.Tensor, labels: torch.Tensor
+    ) -> CausalLMOutput:
+        batch, length, _ = inputs_embeds.shape
+        assert labels.shape == (batch, length)
+        logits = torch.ones((batch, self.alphabet, length)).to(self.device_)
+        mask = (labels != -100).to(self.device_)
+        losses = F.cross_entropy(logits, labels, reduction="none")
+        assert losses.shape == (batch, length)
+        loss = (losses * mask).sum(dim=-1) / mask.sum(dim=-1)
+        return CausalLMOutput(loss, logits)
+
 class LM:
     def __init__(
         self,
@@ -23,13 +58,18 @@ class LM:
 
     @staticmethod
     def from_pretrained(checkpoint: str):
-
+        if checkpoint == "dummy":
+            alphabet, dim = 256, 10
+            tokenizer = DummyTokenizer(alphabet)
+            model = DummyModel(alphabet)
+            embeddings = torch.randn((alphabet, dim))
+            return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
         if checkpoint == "gpt2":
             tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
             model = GPT2LMHeadModel.from_pretrained("gpt2")
             embeddings = model.transformer.wte.weight
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
-        raise RuntimeError(f"unknown checkpoint {str}")
+        raise RuntimeError(f"unknown checkpoint {checkpoint}")
 
     def text_to_ids(self, text: str) -> torch.Tensor:
         result = self.tokenizer(text, return_tensors="pt")["input_ids"].squeeze(0)
@@ -66,8 +106,10 @@ class LM:
         val_ids = val_ids.to(self.device)
         ignore_ids = torch.full(sum_emb.shape[:-1], -100, device=self.device)
         val_embs = self.embeddings[val_ids]
-        labels = torch.vstack((ignore_ids, val_ids)).unsqueeze(0)
-        inp_embs = torch.vstack((sum_emb, val_embs)).unsqueeze(0)
+        assert ignore_ids.dim() == 1 and val_ids.dim() == 1
+        labels = torch.cat((ignore_ids, val_ids)).unsqueeze(0)
+        assert sum_emb.dim() == 2 and val_embs.dim() == 2 # length, dim
+        inp_embs = torch.cat((sum_emb, val_embs), dim=0).unsqueeze(0)
         return self.model(inputs_embeds=inp_embs, labels=labels)
 
     def losses_emb(self, summary_embs: torch.Tensor, validation: str) -> torch.Tensor:
