@@ -64,9 +64,9 @@ class LM:
             model = DummyModel(alphabet)
             embeddings = torch.randn((alphabet, dim))
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
-        if checkpoint == "gpt2":
-            tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-            model = GPT2LMHeadModel.from_pretrained("gpt2")
+        if "gpt2" in checkpoint:
+            tokenizer = GPT2Tokenizer.from_pretrained(checkpoint)
+            model = GPT2LMHeadModel.from_pretrained(checkpoint)
             embeddings = model.transformer.wte.weight
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
         raise RuntimeError(f"unknown checkpoint {checkpoint}")

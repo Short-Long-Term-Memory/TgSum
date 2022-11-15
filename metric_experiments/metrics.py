@@ -17,12 +17,12 @@ def optimize_summary(
     discrete_emb = lm.discretize(sum_embs.data)
 
     for it in range(epochs):
-        loss = l2 * (sum_embs**2).sum()
+        loss = 0
         for _ in range(samples):
             noised_embs = sum_embs + torch.randn_like(sum_embs) * noise
-            print(loss.shape, lm.loss_emb(noised_embs, validation).shape)
             loss = loss + lm.loss_emb(noised_embs, validation) / samples
         print(f"loss = {loss.item()}, std(emb) = {sum_embs.std()}", flush=True)
+        loss += l2 * (sum_embs**2).sum()
         optim.zero_grad()
         loss.backward()
         optim.step()
