@@ -20,12 +20,12 @@ And what we would prefer here is to get the information about interfaces exposed
 and only after them something about internal implementation (in case we would like to reimplement some parts of it).
 
 Now it's natural to think about using some continuation of the original text as $T$. If $O$ was a prefix of $W$, we can use:
-$$ F_2(S, O, L) = f(S, W \setminus O, L) $$
+$$F_2(S, O, L) = f(S, W \setminus O, L)$$
 In the example, we could take some code that actually uses this library, and try to predict it. Obviously, such metric would put less emphasis on the internal details of the library. But now we have an even bigger problem: the optimal solution here is a summary of $T$. In other words, it doesn't depend on the original text at all.
 
 Suppose we have a function that for any text $O$ returns the distribution of it's continuations $c(O)$. What if we take $T \sim c(O)$ now, and 
 take the expectation of our previous metric?
-$$ F_3(S, O, L) = \mathbb{E}[f(S, T, L)], T \sim c(O) $$
+$$F_3(S, O, L) = \mathbb{E}[f(S, T, L)], T \sim c(O)$$
 It nicely combines the two previous approaches, because it's again a function of the original text,
 and not some arbitrary continuation, and at the same time, it still forces the optimal solution to include the information that has higher chances
 to be relevant to the likely continuations.

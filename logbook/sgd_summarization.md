@@ -7,7 +7,7 @@ The problem is that after this process we will have to discretize this embedding
 back into text. And at this step we can lose a lot of information, if the found minimum wasn't wide enough. 
 
 Suppose our current metric is $f(x)$, then we can blur it as follows:
-$$ g(x) = \mathbb{E}[f(x + \varepsilon)],\quad \varepsilon \in \mathcal{N}(0, \sigma^2) $$
+$$g(x) = \mathbb{E}[f(x + \varepsilon)],\quad \varepsilon \in \mathcal{N}(0, \sigma^2)$$
 And to make it computable, we can take a finite number of samples, from which then take a sample mean.
 
 ## Results
