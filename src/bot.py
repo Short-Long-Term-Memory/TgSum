@@ -4,7 +4,7 @@ from time import sleep
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
-from lm import LM
+from metric_experiments.lm import LM
 
 
 class BotsCommands:
@@ -34,18 +34,18 @@ class MessageListener(Listener):  # Event listener must inherit Listener
         self.bot = bot
 
     def on_message(self, message):  # called on every message
+        print("on_message", message)
         chat = message.chat.id
         if chat not in self.bot.task:
-            self.bot.send_message(
-                chat,
-                "I don't know what to do with this text, there is no active command.",
-            )
             return
         task = self.bot.task[chat]
         if task[0] == "gen":
             length = task[1]
-            self.bot.send_message(chat, self.bot.lm.generate(message, length))
-        else:
+            prompt = message.text
+            print("from", prompt)
+            self.bot.send_message(chat, f"Generating {length} tokens...")
+            self.bot.send_message(chat, self.bot.lm.generate_from_text(prompt, length=length))
+        elif task:
             self.bot.send_message(
                 chat, f"Something went wrong, I don't understand this task: {task}"
             )
@@ -61,13 +61,13 @@ if __name__ == "__main__":
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
 
     bot = Bot(token)
-    bot.checkpoint = "dummy"
+    bot.checkpoint = "gpt2"
     bot.lm = LM.from_pretrained(bot.checkpoint)
     bot.task = dict()
 
     bot.add_listener(MessageListener(bot))
     bot.add_commands(BotsCommands(bot))
     bot.start()
+    print("started")
     while True:
         sleep(1)
-        print("working")
