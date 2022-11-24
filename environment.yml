@@ -9,4 +9,5 @@ dependencies:
   - pandas=1.5.1
   - transformers=4.24.0
   - pytorch=1.13.0
+  - origamibot=2.3.2
   - pip
