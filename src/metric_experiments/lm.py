@@ -59,6 +59,11 @@ class LM:
 
     @staticmethod
     def from_pretrained(checkpoint: str):
+        print("dummy", checkpoint == "dummy")
+        print("gpt", "gpt" in checkpoint)
+        print("reformer", "reformer" in checkpoint)
+
+        print("dummy", checkpoint == "dummy")
         if checkpoint == "dummy":
             alphabet, dim = 256, 10
             tokenizer = ReformerTokenizer()
