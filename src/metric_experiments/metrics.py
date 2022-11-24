@@ -1,5 +1,5 @@
 import torch
-from lm import LM
+from .lm import LM
 
 
 def optimize_summary(

@@ -1,5 +1,6 @@
 from sys import argv
 from time import sleep
+from collections import defaultdict
 
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
@@ -18,33 +19,55 @@ class BotsCommands:
                 "Hi! Currently supported commands are:\n"
                 "/start -- just print this message\n"
                 "/echo str -- sends str back to you\n"
-                "/gen [len] -- the next message will be considered a prompt for text generation\n"
+                "/gen -- the next non-command message will be considered a prompt for text generation\n"
+                "/len x -- set the number of tokens to add when generating\n"
+                "/k x -- set the top_k parameter in contrastive search (larger are better, but slower)\n"
+                "/alpha x -- set the penalty_alpha parameter in contrastive search (larger are less repetitive, but strange) \n"
             ),
         )
 
     def echo(self, message, value: str):  # /echo [value: str] command
         self.bot.send_message(message.chat.id, value)
 
-    def gen(self, message, length: int = 32):
-        self.bot.task[message.chat.id] = ("gen", length)
+    def gen(self, message):
+        settings = self.bot.settings[message.chat.id]
+        settings["task"] = "gen"
+        settings["len"] = 32
+        settings["k"] = 3
+        settings["alpha"] = 0.5
 
+    def len(self, message, value: int):
+        settings = self.bot.settings[message.chat.id]
+        settings["len"] = value
+    
+    def k(self, message, value: int):
+        settings = self.bot.settings[message.chat.id]
+        settings["k"] = value
 
-class MessageListener(Listener):  # Event listener must inherit Listener
+    def alpha(self, message, value: float):
+        settings = self.bot.settings[message.chat.id]
+        settings["alpha"] = value
+
+class MessageListener(Listener):
     def __init__(self, bot):
         self.bot = bot
 
-    def on_message(self, message):  # called on every message
+    def on_message(self, message):
+        if message.text[:1] == '/':
+            return
         print("on_message", message)
         chat = message.chat.id
-        if chat not in self.bot.task:
+        if chat not in self.bot.settings:
             return
-        task = self.bot.task[chat]
-        if task[0] == "gen":
-            length = task[1]
+        settings = self.bot.settings[chat]
+        if settings["task"] == "gen":
+            length, k, alpha = settings["len"], settings["k"], settings["alpha"]
             prompt = message.text
             print("from", prompt)
-            self.bot.send_message(chat, f"Generating {length} tokens...")
-            self.bot.send_message(chat, self.bot.lm.generate_from_text(prompt, length=length))
+            self.bot.send_message(chat, f"Generating {length} tokens with k={k}, alpha={alpha}...")
+            self.bot.send_message(
+                chat, self.bot.lm.generate_from_text(prompt, length=length, k=k, alpha=alpha)
+            )
         elif task:
             self.bot.send_message(
                 chat, f"Something went wrong, I don't understand this task: {task}"
@@ -57,13 +80,13 @@ class MessageListener(Listener):  # Event listener must inherit Listener
             self.bot.send_message(message.chat.id, "Error in command:\n{err}")
 
 
-if __name__ == "__main__":
+def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
 
     bot = Bot(token)
     bot.checkpoint = "gpt2"
     bot.lm = LM.from_pretrained(bot.checkpoint)
-    bot.task = dict()
+    bot.settings = defaultdict(dict)
 
     bot.add_listener(MessageListener(bot))
     bot.add_commands(BotsCommands(bot))
@@ -71,3 +94,11 @@ if __name__ == "__main__":
     print("started")
     while True:
         sleep(1)
+
+
+if __name__ == "__main__":
+    while True:
+        try:
+            main_loop()
+        except Exception as e:
+            print(e)

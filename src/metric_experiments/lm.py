@@ -144,16 +144,17 @@ class LM:
             suffix = self.ids_to_text(y[i : i + 1])
             print(prefix, "|", suffix)
 
-    def generate_embs(self, input_ids, length=10, k=3, alpha=0.5):
+    def generate_embs(self, input_ids, length, k, alpha):
+        print('gen_embs', length, k, alpha)
         return self.model.generate(
             input_ids,
             attention_mask=torch.ones_like(input_ids),
-            max_length=length,
+            max_length=input_ids.size(1) + length,
             top_k=k,
             penalty_alpha=alpha,
         ).squeeze(0)
 
-    def generate_from_text(self, input_text, length=10, k=3, alpha=0.5):
+    def generate_from_text(self, input_text, length, k, alpha):
         embs = self.text_to_ids(input_text).unsqueeze(0).to(self.device)
         generated = self.generate_embs(embs, length, k, alpha)
         return self.ids_to_text(generated)

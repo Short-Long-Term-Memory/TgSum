@@ -34,8 +34,16 @@ class TestLM(unittest.TestCase):
     #     new_embs = optimize_summary(lm, sum_embs, validation, epochs=3)
     #     self.assertFalse(torch.allclose(sum_embs, new_embs))
 
-    def test_generate_smoke(self):
+    def test_generate(self):
         lm = LM.from_pretrained("distilgpt2")
         message = "Continue this"
-        result = lm.generate_from_text(message)
-        self.assertTrue(isinstance(result, str))
+
+        result1 = lm.generate_from_text(message, length=10, k=1, alpha=0.1)
+        result2 = lm.generate_from_text(message, length=10, k=1, alpha=0.5)
+        result3 = lm.generate_from_text(message, length=10, k=10, alpha=0.5)
+
+        self.assertTrue(isinstance(result1, str))
+        self.assertTrue(isinstance(result2, str))
+        self.assertTrue(isinstance(result3, str))
+        self.assertNotEqual(result1, result2)
+        self.assertNotEqual(result2, result3)
