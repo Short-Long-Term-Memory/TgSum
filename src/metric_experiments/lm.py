@@ -8,6 +8,7 @@ from transformers import (
 )
 from transformers.modeling_outputs import CausalLMOutput
 
+
 class ReformerTokenizer(PreTrainedTokenizer):
     def __init__(self, alphabet: int):
         self.alphabet = alphabet
@@ -23,9 +24,10 @@ class ReformerTokenizer(PreTrainedTokenizer):
         assert ids.dim() == 1
         return "".join([chr(x - 2) if x > 1 else "" for x in ids])
 
+
 class DummyModel(PreTrainedModel):
     def __init__(self, alphabet: int):
-        self.vocab = alphabet + 2 # to be compatible with ReformerTokenizer
+        self.vocab = alphabet + 2  # to be compatible with ReformerTokenizer
         self.device_ = "cpu"
 
     def to(self, device: str):
@@ -143,18 +145,16 @@ class LM:
             suffix = self.ids_to_text(y[i : i + 1])
             print(prefix, "|", suffix)
 
-    def generate_embs(self, input_ids, length, k, alpha):
-        print('gen_embs', length, k, alpha)
+    def generate_embs(self, input_ids, length, p):
         return self.model.generate(
             input_ids,
             attention_mask=torch.ones_like(input_ids),
-            max_length=input_ids.size(1) + length,
-            top_k=k,
-            penalty_alpha=alpha,
-            do_sample=True
+            max_new_tokens=input_ids.size(1) + length,
+            typical_p=p,
+            do_sample=True,
         ).squeeze(0)
 
-    def generate_from_text(self, input_text, length, k, alpha):
+    def generate_from_text(self, input_text, **kwargs):
         embs = self.text_to_ids(input_text).unsqueeze(0).to(self.device)
-        generated = self.generate_embs(embs, length, k, alpha)
+        generated = self.generate_embs(embs, **kwargs)
         return self.ids_to_text(generated)

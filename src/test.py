@@ -39,18 +39,14 @@ class TestLM(unittest.TestCase):
         message = "A man has appeared in court"
         
         torch.manual_seed(0)
-        result1 = lm.generate_from_text(message, length=50, k=1, alpha=0.0)
+        result1 = lm.generate_from_text(message, length=50, p=0.01)
         torch.manual_seed(0)
-        result2 = lm.generate_from_text(message, length=50, k=1, alpha=0.9)
+        result2 = lm.generate_from_text(message, length=50, p=0.01)
         torch.manual_seed(0)
-        result3 = lm.generate_from_text(message, length=50, k=10, alpha=0.0)
-        torch.manual_seed(0)
-        result4 = lm.generate_from_text(message, length=50, k=10, alpha=0.9)
+        result3 = lm.generate_from_text(message, length=50, p=0.99)
 
         self.assertTrue(isinstance(result1, str))
         self.assertTrue(isinstance(result2, str))
         self.assertTrue(isinstance(result3, str))
-        self.assertTrue(isinstance(result4, str))
         self.assertEqual(result1, result2)
         self.assertNotEqual(result2, result3)
-        self.assertNotEqual(result3, result4)
