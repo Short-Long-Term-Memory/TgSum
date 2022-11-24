@@ -16,9 +16,10 @@
 ## Summarization algorithms
 - Take a good and/or differentiable metric (as in [LM experiments](logbook/lm_metrics.md)) and optimize it, unsupervised or no training at all
     - Gradient descent, as in [Summarization by SGD](logbook/sgd_summarization.md)
+    - Sample candidates from another summarization model
     - Metaheuristics
     - Diffusion on the word embedding level (as [here](https://arxiv.org/pdf/2211.04236.pdf))
     - Additional Seq2seq (for differentiable metrics) or RL (for non-differentiable) model trained on it
 - Train auto-encoder, then add some latent space manipulations (as in [MeanSum](http://proceedings.mlr.press/v97/chu19b/chu19b.pdf)), unsupervised training
 - Seq2seq architectures trained on texts and their summaries, supervised training
-- 
+- Fine-tune existing seq2seq models to be able to interact with the user

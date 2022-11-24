@@ -20,54 +20,94 @@ class BotsCommands:
                 "/start -- just print this message\n"
                 "/echo str -- sends str back to you\n"
                 "/gen -- the next non-command message will be considered a prompt for text generation\n"
+                "/sum -- the next non-command message will be considered a prompt for text summarization\n"
                 "/len x -- set the number of tokens to add when generating\n"
-                "/k x -- set the top_k parameter in contrastive search (larger are better, but slower)\n"
-                "/alpha x -- set the penalty_alpha parameter in contrastive search (larger are less repetitive, but strange) \n"
+                "/p x -- set typical_p parameter for generation, 0 < p < 1, higher p gives more random text\n"
+                "/iter x -- set the number of candidates to consider for summarization\n"
             ),
         )
+        settings = self.bot.settings[message.chat.id]
+        settings["task"] = "gen"
+        settings["len"] = 32
+        settings["p"] = 0.5
+        settings["iter"] = 3
 
-    def echo(self, message, value: str):  # /echo [value: str] command
+    def echo(self, message, value: str):
         self.bot.send_message(message.chat.id, value)
 
     def gen(self, message):
         settings = self.bot.settings[message.chat.id]
         settings["task"] = "gen"
-        settings["len"] = 32
-        settings["k"] = 3
-        settings["alpha"] = 0.5
+
+    def sum(self, message):
+        settings = self.bot.settings[message.chat.id]
+        settings["task"] = "sum"
 
     def len(self, message, value: int):
         settings = self.bot.settings[message.chat.id]
         settings["len"] = value
-    
-    def k(self, message, value: int):
-        settings = self.bot.settings[message.chat.id]
-        settings["k"] = value
 
-    def alpha(self, message, value: float):
+    def p(self, message, value: float):
         settings = self.bot.settings[message.chat.id]
-        settings["alpha"] = value
+        settings["p"] = value
+
 
 class MessageListener(Listener):
     def __init__(self, bot):
         self.bot = bot
 
     def on_message(self, message):
-        if message.text[:1] == '/':
+        if message.text[:1] == "/":
             return
         print("on_message", message)
         chat = message.chat.id
         if chat not in self.bot.settings:
             return
         settings = self.bot.settings[chat]
-        if settings["task"] == "gen":
-            length, k, alpha = settings["len"], settings["k"], settings["alpha"]
+        task = settings["task"]
+        if task == "gen":
+            length, p = settings["len"], settings["p"]
             prompt = message.text
-            print("from", prompt)
-            self.bot.send_message(chat, f"Generating {length} tokens with k={k}, alpha={alpha}...")
+            self.bot.send_message(chat, f"Generating {length} tokens with p={p}...")
             self.bot.send_message(
-                chat, self.bot.lm.generate_from_text(prompt, length=length, k=k, alpha=alpha)
+                chat, self.bot.lm.generate_from_text(prompt, length=length, p=p)
             )
+        elif task == "sum":
+            length, p, iter = settings["len"], settings["p"], settings["iter"]
+            prompt = f"Text: {message.text} Summary:"
+            self.bot.send_message(
+                chat, f"Generating {length} tokens {iter} times with p={p}..."
+            )
+            conts = []
+            for p in [0.25, 0.5, 0.95]:
+                text_length = len(self.bot.lm.text_to_ids(message.text))
+                cont = ""
+                while not cont:
+                    cont = self.bot.lm.generate_from_text(
+                        message.text, length=text_length, p=p
+                    )[len(message.text) :]
+                conts.append(cont)
+                self.bot.send_message(chat, f"Continuation with p={p}:\n{cont}")
+
+            for it in range(iter):
+                full = self.bot.lm.generate_from_text(prompt, length=length, p=p)
+                summary = full[len(prompt) :]
+                self.bot.send_message(chat, f"Summary #{it + 1}:")
+                self.bot.send_message(chat, summary)
+                raw_score = self.bot.lm.loss_str(summary, message.text)
+                prompted_score = self.bot.lm.loss_str(
+                    f"Summary: {summary} Text:", message.text
+                )
+                cont_scores = []
+                for i, cont in enumerate(conts):
+                    cont_score = self.bot.lm.loss_str(f"Summary: {summary} Text:", cont)
+                    cont_scores.append(cont_score.item())
+                cont_score = sum(cont_scores) / len(cont_scores)
+                self.bot.send_message(
+                    chat,
+                    f"raw_score = {raw_score}, prompted_score = {prompted_score}, cont_score = {cont_score}",
+                )
+                self.bot.send_message(chat, f"cont_scores = {cont_scores}")
         elif task:
             self.bot.send_message(
                 chat, f"Something went wrong, I don't understand this task: {task}"
@@ -84,7 +124,8 @@ def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
 
     bot = Bot(token)
-    bot.checkpoint = "gpt2"
+    bot.checkpoint = "EleutherAI/gpt-neo-125M"
+    # bot.checkpoint = "distilgpt2"
     bot.lm = LM.from_pretrained(bot.checkpoint)
     bot.settings = defaultdict(dict)
 
