@@ -156,7 +156,7 @@ class LM:
         return self.model.generate(
             input_ids,
             attention_mask=torch.ones_like(input_ids),
-            max_new_tokens=input_ids.size(1) + length,
+            max_new_tokens=length,
             typical_p=p,
             do_sample=True,
         ).squeeze(0)
