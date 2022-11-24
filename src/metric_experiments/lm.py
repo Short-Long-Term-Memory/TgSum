@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 from transformers import (
-    GPT2LMHeadModel,
-    GPT2Tokenizer,
+    AutoTokenizer,
+    AutoModelForCausalLM,
     ReformerModelWithLMHead,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -15,8 +15,8 @@ class ReformerTokenizer(PreTrainedTokenizer):
         assert return_tensors == "pt"
         if not isinstance(text, bytes):
             text = str.encode(text)
-        input_ids = torch.tensor([x + 2 for x in text])
-        return {"input_ids": torch.tensor(input_ids).unsqueeze(0)}
+        input_ids = torch.tensor([x + 2 for x in text]).unsqueeze(0)
+        return {"input_ids": input_ids}
 
     def decode(self, ids: torch.Tensor) -> str:
         assert ids.dim() == 1
@@ -65,9 +65,9 @@ class LM:
             model = DummyModel(alphabet)
             embeddings = torch.randn((alphabet, dim))
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
-        if "gpt2" in checkpoint:
-            tokenizer = GPT2Tokenizer.from_pretrained(checkpoint)
-            model = GPT2LMHeadModel.from_pretrained(checkpoint)
+        if "gpt" in checkpoint:
+            tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+            model = AutoModelForCausalLM.from_pretrained(checkpoint)
             embeddings = model.transformer.wte.weight
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
         if "reformer" in checkpoint:
