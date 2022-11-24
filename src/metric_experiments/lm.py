@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from transformers import (
     GPT2LMHeadModel,
     GPT2Tokenizer,
+    ReformerModelWithLMHead,
     PreTrainedModel,
     PreTrainedTokenizer,
 )
@@ -10,9 +11,6 @@ from transformers.modeling_outputs import CausalLMOutput
 
 
 class ReformerTokenizer(PreTrainedTokenizer):
-    def __init__(self, alphabet: int):
-        self.alphabet = alphabet
-
     def __call__(self, text: str, return_tensors: str) -> torch.Tensor:
         assert return_tensors == "pt"
         if not isinstance(text, bytes):
@@ -63,7 +61,7 @@ class LM:
     def from_pretrained(checkpoint: str):
         if checkpoint == "dummy":
             alphabet, dim = 256, 10
-            tokenizer = ReformerTokenizer(alphabet)
+            tokenizer = ReformerTokenizer()
             model = DummyModel(alphabet)
             embeddings = torch.randn((alphabet, dim))
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
@@ -71,6 +69,11 @@ class LM:
             tokenizer = GPT2Tokenizer.from_pretrained(checkpoint)
             model = GPT2LMHeadModel.from_pretrained(checkpoint)
             embeddings = model.transformer.wte.weight
+            return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
+        if "reformer" in checkpoint:
+            tokenizer = ReformerTokenizer()
+            model = ReformerModelWithLMHead.from_pretrained(checkpoint)
+            embeddings = model.reformer.embeddings.word_embeddings.weight
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
         raise RuntimeError(f"unknown checkpoint {checkpoint}")
 
