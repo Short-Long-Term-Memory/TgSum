@@ -6,6 +6,8 @@ from transformers import (
     ReformerModelWithLMHead,
     PreTrainedModel,
     PreTrainedTokenizer,
+    T5Tokenizer,
+    T5ForConditionalGeneration
 )
 from transformers.modeling_outputs import CausalLMOutput
 
@@ -33,7 +35,7 @@ class DummyModel(PreTrainedModel):
         return self
 
     def __call__(
-        self, inputs_embeds: torch.Tensor, labels: torch.Tensor
+            self, inputs_embeds: torch.Tensor, labels: torch.Tensor
     ) -> CausalLMOutput:
         batch, length, _ = inputs_embeds.shape
         assert labels.shape == (batch, length)
@@ -47,10 +49,10 @@ class DummyModel(PreTrainedModel):
 
 class LM:
     def __init__(
-        self,
-        tokenizer: PreTrainedTokenizer,
-        model: PreTrainedModel,
-        embeddings: torch.Tensor,
+            self,
+            tokenizer: PreTrainedTokenizer,
+            model: PreTrainedModel,
+            embeddings: torch.Tensor,
     ):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = tokenizer
@@ -62,6 +64,7 @@ class LM:
         print("dummy", checkpoint == "dummy")
         print("gpt", "gpt" in checkpoint)
         print("reformer", "reformer" in checkpoint)
+        print("t5", "t5" in checkpoint)
 
         if checkpoint == "dummy":
             alphabet, dim = 256, 10
@@ -78,6 +81,11 @@ class LM:
             tokenizer = ReformerTokenizer()
             model = ReformerModelWithLMHead.from_pretrained(checkpoint)
             embeddings = model.reformer.embeddings.word_embeddings.weight
+            return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
+        if "t5" in checkpoint:
+            tokenizer = T5Tokenizer.from_pretrained("t5-base")
+            model = T5ForConditionalGeneration.from_pretrained(checkpoint)
+            embeddings = model.shared.weight
             return LM(tokenizer=tokenizer, model=model, embeddings=embeddings)
         raise RuntimeError(f"unknown checkpoint {checkpoint}")
 
@@ -111,7 +119,7 @@ class LM:
         return self.ids_to_embs(self.embs_to_ids(embs))
 
     def _run_with_validation(
-        self, sum_emb: torch.Tensor, val_ids: torch.Tensor
+            self, sum_emb: torch.Tensor, val_ids: torch.Tensor
     ) -> CausalLMOutput:
         val_ids = val_ids.to(self.device)
         ignore_ids = torch.full(sum_emb.shape[:-1], -100, device=self.device)
@@ -125,7 +133,7 @@ class LM:
     def losses_emb(self, summary_embs: torch.Tensor, validation: str) -> torch.Tensor:
         val_ids = self.text_to_ids(validation)
         output = self._run_with_validation(summary_embs, val_ids)
-        logits = output.logits[:, -val_ids.size(1) - 1 : -1].squeeze(0)
+        logits = output.logits[:, -val_ids.size(1) - 1: -1].squeeze(0)
         return F.cross_entropy(logits, val_ids, reduction="none")
 
     def loss_emb(self, summary_embs: torch.Tensor, validation: str) -> torch.Tensor:
@@ -145,11 +153,11 @@ class LM:
         sum_embs = self.ids_to_embs(sum_ids)
         output = self._run_with_validation(sum_embs, val_ids)
         x = val_ids.squeeze(0)
-        y = output.logits.squeeze(0).argmax(dim=-1)[-x.size(0) - 1 : -1]
+        y = output.logits.squeeze(0).argmax(dim=-1)[-x.size(0) - 1: -1]
         assert len(x) == len(y)
         for i in range(len(x)):
             prefix = self.ids_to_text(x[: i + 1])
-            suffix = self.ids_to_text(y[i : i + 1])
+            suffix = self.ids_to_text(y[i: i + 1])
             print(prefix, "|", suffix)
 
     def generate_embs(self, input_ids, length, p):

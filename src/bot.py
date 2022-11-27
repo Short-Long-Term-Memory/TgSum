@@ -124,7 +124,8 @@ def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
 
     bot = Bot(token)
-    bot.checkpoint = "EleutherAI/gpt-neo-125M"
+    # bot.checkpoint = "EleutherAI/gpt-neo-125M"
+    bot.checkpoint = "../baseline_models/t5-base_ft"
     # bot.checkpoint = "distilgpt2"
     bot.lm = LM.from_pretrained(bot.checkpoint)
     bot.settings = defaultdict(dict)
