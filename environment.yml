@@ -12,4 +12,4 @@ dependencies:
   - sentencepiece=0.1.96
   - pip=22.3.1 
   - pip:
-    - origamibot=2.3.2
+    - origamibot==2.3.2
