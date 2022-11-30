@@ -41,6 +41,7 @@ class BotsCommands:
             ),
         )
         settings = self.bot.settings[message.chat.id]
+        settings["is_init"] = True
         settings["len"] = 32
         settings["p"] = 0.5
         settings["iter"] = 3
@@ -49,6 +50,11 @@ class BotsCommands:
     def gen(self, message):
         chat = message.chat.id
         settings = self.bot.settings[chat]
+
+        if not settings.get("is_init", False):
+            self.bot.send_message(chat, "Please, run /start command to init bot")
+            return
+
         length, p = settings["len"], settings["p"]
         prompt = settings["text"]
 
@@ -64,6 +70,11 @@ class BotsCommands:
     def sum(self, message):
         chat = message.chat.id
         settings = self.bot.settings[chat]
+
+        if not settings.get("is_init", False):
+            self.bot.send_message(chat, "Please, run /start command to init bot")
+            return
+
         text = settings["text"]
 
         if text == "":
@@ -115,7 +126,7 @@ class BotsCommands:
         settings = self.bot.settings[message.chat.id]
         settings["p"] = value
 
-    def clean(self, message):
+    def clear(self, message):
         settings = self.bot.settings[message.chat.id]
         settings["text"] = ""
 
