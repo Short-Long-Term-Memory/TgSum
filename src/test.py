@@ -2,7 +2,6 @@ import unittest
 
 import torch
 from metric_experiments.lm import LM
-from metric_experiments.metrics import optimize_summary
 
 
 class TestLM(unittest.TestCase):
