@@ -139,7 +139,7 @@ def main(model_checkpoint):
     for epoch in range(config["VAL_EPOCHS"]):
         predictions, actuals = validate(tokenizer, model, val_loader)
         final_df = pd.DataFrame({'Generated Text': predictions, 'Actual Text': actuals})
-        final_df.to_csv(f'{model_checkpoint}_summary_predictions.csv')
+        final_df.to_csv(f'{model_checkpoint}_{epoch}_summary_predictions.csv')
 
 
 if __name__ == "__main__":
