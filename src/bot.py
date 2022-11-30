@@ -26,7 +26,7 @@ class BotsCommands:
                 "Hi! Currently supported commands are:\n"
                 "/start -- just print this message\n\n"
                 
-                "Write or forward messages to the bot, then use one of the main commands :)"
+                "Write or forward messages to the bot, then use one of the main commands :)\n\n"
 
                 "Main commands:\n"
                 "/gen -- generate text based on message history\n"
@@ -34,6 +34,7 @@ class BotsCommands:
                 "/clear -- clear message history\n\n"
 
                 "Configs: \n"
+                "/eval -- enable/disable evaluation mode: show continuations and metrics"
                 "/len x -- set the number of tokens to add when generating, default len=32\n"
                 "/p x -- set typical_p parameter for generation, 0 < p < 1,"
                         "higher p gives more random text, default p=0.5\n"
@@ -46,6 +47,7 @@ class BotsCommands:
         settings["p"] = 0.5
         settings["iter"] = 3
         settings["text"] = ""
+        settings["eval"] = False
 
     def gen(self, message):
         chat = message.chat.id
@@ -88,35 +90,42 @@ class BotsCommands:
         )
 
         conts = []
-        for p in [0.25, 0.5, 0.95]:
-            text_length = len(self.bot.lm.text_to_ids(text))
-            cont = ""
-            while not cont:
-                cont = self.bot.lm.generate_from_text(
-                    text, length=text_length, p=p
-                )[len(text):]
-            conts.append(cont)
-            self.bot.send_message(chat, f"Continuation with p={p}:\n{cont}")
+        if settings["eval"]:
+            for p in [0.25, 0.5, 0.95]:
+                text_length = len(self.bot.lm.text_to_ids(text))
+                cont = ""
+                while not cont:
+                    cont = self.bot.lm.generate_from_text(
+                        text, length=text_length, p=p
+                    )[len(text):]
+                conts.append(cont)
+                self.bot.send_message(chat, f"Continuation with p={p}:\n{cont}")
 
         for it in range(iterations):
             full = self.bot.lm.generate_from_text(prompt, length=length, p=p)
             summary = full[len(prompt):]
             self.bot.send_message(chat, f"Summary #{it + 1}:")
             self.bot.send_message(chat, summary)
-            raw_score = self.bot.lm.loss_str(summary, text)
-            prompted_score = self.bot.lm.loss_str(
-                f"Summary: {summary} Text:", text
-            )
-            cont_scores = []
-            for i, cont in enumerate(conts):
-                cont_score = self.bot.lm.loss_str(f"Summary: {summary} Text:", cont)
-                cont_scores.append(cont_score.item())
-            cont_score = sum(cont_scores) / len(cont_scores)
-            self.bot.send_message(
-                chat,
-                f"raw_score = {raw_score}, prompted_score = {prompted_score}, cont_score = {cont_score}",
-            )
-            self.bot.send_message(chat, f"cont_scores = {cont_scores}")
+            if settings["eval"]:
+                raw_score = self.bot.lm.loss_str(summary, text)
+                prompted_score = self.bot.lm.loss_str(
+                    f"Summary: {summary} Text:", text
+                )
+                cont_scores = []
+                for i, cont in enumerate(conts):
+                    cont_score = self.bot.lm.loss_str(f"Summary: {summary} Text:", cont)
+                    cont_scores.append(cont_score.item())
+                cont_score = sum(cont_scores) / len(cont_scores)
+                self.bot.send_message(
+                    chat,
+                    f"raw_score = {raw_score}, prompted_score = {prompted_score}, cont_score = {cont_score}",
+                )
+                self.bot.send_message(chat, f"cont_scores = {cont_scores}")
+
+    def clear(self, message):
+        settings = self.bot.settings[message.chat.id]
+        settings["text"] = ""
+        self.bot.send_message(message.chat.id, "Message history cleared")
 
     def len(self, message, value: int):
         settings = self.bot.settings[message.chat.id]
@@ -126,9 +135,10 @@ class BotsCommands:
         settings = self.bot.settings[message.chat.id]
         settings["p"] = value
 
-    def clear(self, message):
+    def eval(self, message):
         settings = self.bot.settings[message.chat.id]
-        settings["text"] = ""
+        settings["eval"] = not settings.get("eval", False)
+        self.bot.send_message(message.chat.id, f"Evaluation mode: {settings['eval']}")
 
 
 class MessageListener(Listener):
