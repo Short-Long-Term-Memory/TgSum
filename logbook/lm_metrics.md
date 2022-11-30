@@ -9,7 +9,8 @@ the more informative summary we have, the smaller will be the mean loss. Let's d
 Now, what do we take for the $T$? 
 
 First, we can take the text itself:
-$$ F_1(S, O, L) = f(S, O, L)$$
+$$F_1(S, O, L) = f(S, O, L)$$
+
 The optimal summary in such metric will contain the most important information that is needed to 
 reproduce this text. And while it's already a nice property, in most cases we are not interested in memorizing the text.
 We would prefer instead to get the information that will be useful later.
@@ -21,6 +22,7 @@ and only after them something about internal implementation (in case we would li
 
 Now it's natural to think about using some continuation of the original text as $T$. If $O$ was a prefix of $W$, we can use:
 $$F_2(S, O, L) = f(S, W \setminus O, L)$$
+
 In the example, we could take some code that actually uses this library, and try to predict it. Obviously, such metric would put less emphasis on the internal details of the library. But now we have an even bigger problem: the optimal solution here is a summary of $T$. In other words, it doesn't depend on the original text at all.
 
 Suppose we have a function that for any text $O$ returns the distribution of it's continuations $c(O)$. What if we take $T \sim c(O)$ now, and 
@@ -41,7 +43,7 @@ summary of it (the text and the summary were taken from XSum dataset). But it we
 Also, if the language model has small context size, or for other reasons tends to forget long-term information, this metric will favor summaries focusing on the last sentences of the text.
 
 ## Experiments
-Here the first approach ($T = O$) was tested with different versions of GPT-2. Tested summaries were:
+Here the first approach, $T = O$, was tested with different versions of GPT-2. Tested summaries were:
 1. "Officers searched properties in the Waterfront Park and Colonsay",
 2. "A man has appeared in court after firearms, ammunition and cash were seized by police in Edinburgh.",
 3. " ",
