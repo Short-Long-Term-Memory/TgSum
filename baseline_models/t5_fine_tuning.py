@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import T5ForConditionalGeneration
 from transformers import T5Tokenizer
 from datasets import load_dataset
+import os
 
 device = 'cuda' if cuda.is_available() else 'cpu'
 config = {"TRAIN_BATCH_SIZE": 2, "VALID_BATCH_SIZE": 2, "TRAIN_EPOCHS": 1, "VAL_EPOCHS": 1, "LEARNING_RATE": 1e-4,
@@ -135,6 +136,11 @@ def main(model_checkpoint):
 
     for epoch in range(config["TRAIN_EPOCHS"]):
         train(epoch, tokenizer, model, device, training_loader, optimizer)
+
+    weights_path = f"{model_checkpoint}_ft"
+    if not os.path.exists(weights_path):
+        os.mkdir(weights_path)
+    model.save_pretrained(weights_path)
 
     for epoch in range(config["VAL_EPOCHS"]):
         predictions, actuals = validate(tokenizer, model, val_loader)
