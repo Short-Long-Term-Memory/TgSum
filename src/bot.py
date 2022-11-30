@@ -25,6 +25,8 @@ class BotsCommands:
             (
                 "Hi! Currently supported commands are:\n"
                 "/start -- just print this message\n\n"
+                
+                "Write or forward messages to the bot, then use one of the main commands :)"
 
                 "Main commands:\n"
                 "/gen -- generate text based on message history\n"
@@ -39,7 +41,6 @@ class BotsCommands:
             ),
         )
         settings = self.bot.settings[message.chat.id]
-        settings["task"] = "gen"
         settings["len"] = 32
         settings["p"] = 0.5
         settings["iter"] = 3
@@ -134,7 +135,7 @@ class MessageListener(Listener):
 def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
 
-    bot = TgSumBot(token, model_name="dummy")
+    bot = TgSumBot(token)
     bot.add_listener(MessageListener(bot))
     bot.add_commands(BotsCommands(bot))
     bot.start()
