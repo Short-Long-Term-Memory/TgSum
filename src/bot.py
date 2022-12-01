@@ -1,18 +1,21 @@
 from time import sleep
 from collections import defaultdict
+from typing import Optional
 
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
 from metric_experiments.lm import LM
+from topic_modeling.topics import TopicsCollector
 
 
 class TgSumBot(Bot):
-    def __init__(self, token: str, model_name: str = "EleutherAI/gpt-neo-125M"):
+    def __init__(self, token: str, topic_model: TopicsCollector, model_name: str = "EleutherAI/gpt-neo-125M"):
         super().__init__(token)
         self.settings = defaultdict(dict)
         self.lm = LM.from_pretrained(model_name)
         self.checkpoint = model_name
+        self.topic_model = topic_model
 
 
 class BotsCommands:
@@ -26,11 +29,15 @@ class BotsCommands:
                 "Hi! Currently supported commands are:\n"
                 "/start -- just print this message\n\n"
                 
-                "Write or forward messages to the bot, then use one of the main commands :)\n\n"
+                "Write or forward messages to the bot, then use one of the main commands :) "
+                "Keep in mind that 'topic' commands only work if at least 10 messages are sent to the bot\n\n"
 
                 "Main commands:\n"
+                "/collect <topic> -- show all messages with given <topic>\n"
                 "/gen -- generate text based on message history\n"
+                "/gen_topic <topic> -- generate text based on message with given topic\n"
                 "/sum -- summarize sent messages\n"
+                "/sum_topic <topic> -- summarize sent messages with given topic\n"
                 "/clear -- clear message history\n\n"
 
                 "Configs: \n"
@@ -46,10 +53,25 @@ class BotsCommands:
         settings["len"] = 32
         settings["p"] = 0.5
         settings["iter"] = 3
-        settings["text"] = ""
+        settings["text"] = []
         settings["eval"] = False
 
+    def collect(self, message, value: str):
+        self.bot.send_message(message.chat.id, self.__get_text(message.chat.id, value))
+
+    def sum(self, message):
+        self.__sum(message)
+
+    def sum_topic(self, message, value: str):
+        self.__sum(message, value)
+
     def gen(self, message):
+        self.__gen(message)
+
+    def gen_topic(self, message, value: str):
+        self.__gen(message, value)
+
+    def __gen(self, message, value: Optional[str] = None):
         chat = message.chat.id
         settings = self.bot.settings[chat]
 
@@ -58,7 +80,7 @@ class BotsCommands:
             return
 
         length, p = settings["len"], settings["p"]
-        prompt = settings["text"]
+        prompt = self.__get_text(chat, value)
 
         if prompt == "":
             self.bot.send_message(chat, "Nothing to generate")
@@ -69,7 +91,7 @@ class BotsCommands:
             chat, self.bot.lm.generate_from_text(prompt, length=length, p=p)
         )
 
-    def sum(self, message):
+    def __sum(self, message, value: Optional[str] = None):
         chat = message.chat.id
         settings = self.bot.settings[chat]
 
@@ -77,7 +99,7 @@ class BotsCommands:
             self.bot.send_message(chat, "Please, run /start command to init bot")
             return
 
-        text = settings["text"]
+        text = self.__get_text(chat, value)
 
         if text == "":
             self.bot.send_message(chat, "Nothing to summarize")
@@ -124,8 +146,16 @@ class BotsCommands:
 
     def clear(self, message):
         settings = self.bot.settings[message.chat.id]
-        settings["text"] = ""
+        settings["text"] = []
         self.bot.send_message(message.chat.id, "Message history cleared")
+
+    def __get_text(self, chat_id: int, topic: str = None) -> str:
+        text = self.bot.settings[chat_id]["text"]
+        if len(text) >= TopicsCollector.MIN_MSG_NUM and topic is not None and topic != "":
+            text = self.bot.topic_model.find_messages_with_topic(text, topic)
+
+        return "\n".join(text)
+
 
     def len(self, message, value: int):
         settings = self.bot.settings[message.chat.id]
@@ -150,13 +180,13 @@ class MessageListener(Listener):
         text = message.text if message.text is not None else message.caption
         user = "@" + (message.forward_from.username if message.forward_from is not None else message.from_user.username)
         if text is not None:
-            self.bot.settings[message.chat.id]["text"] += (" " + user + ": " + text)
+            self.bot.settings[message.chat.id]["text"].append(user + ": " + text)
 
 
 def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
-
-    bot = TgSumBot(token)
+    topic_collector = TopicsCollector()
+    bot = TgSumBot(token, topic_collector)
     bot.add_listener(MessageListener(bot))
     bot.add_commands(BotsCommands(bot))
     bot.start()
