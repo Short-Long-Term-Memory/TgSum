@@ -106,7 +106,7 @@ class BotsCommands:
             return
 
         length, p, iterations = settings["len"], settings["p"], settings["iter"]
-        prompt = f"summarize: {text}"
+        prompt = f"summarize: {text}</s>"
         self.bot.send_message(
             chat, f"Generating {length} tokens {iterations} times with p={p}..."
         )
