@@ -9,9 +9,10 @@ dependencies:
   - pandas=1.5.1
   - transformers=4.24.0
   - pytorch=1.13.0
-  - datasets
+  - datasets=2.6.1
   - sentencepiece=0.1.96
-  - pip=22.3.1 
+  - pip=22.3.1
+  - gensim=4.2.0
   - pip:
     - origamibot==2.3.2
     - bertopic==0.12.0

@@ -153,6 +153,7 @@ class BotsCommands:
         text = self.bot.settings[chat_id]["text"]
         if len(text) >= TopicsCollector.MIN_MSG_NUM and topic is not None and topic != "":
             text = self.bot.topic_model.find_messages_with_topic(text, topic)
+            print(len(text))
 
         return "\n".join(text)
 
