@@ -1,5 +1,5 @@
 # TgSum
-It will be a telegram bot that can summarize chat history into a concise abstract.
+Telegram bot that can summarize chat history into a concise abstract.
 You can try it at @tg_sum_bot. If the server is down and the bot isn't working, run [this notebook](https://colab.research.google.com/drive/1FDwN9RM1uOsBHLsOL9ADHqLtw-iJBzaV?usp=sharing).
 
 - [Ideas to try](ideas.md)
