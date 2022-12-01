@@ -41,7 +41,7 @@ class BotsCommands:
                 "/clear -- clear message history\n\n"
 
                 "Configs: \n"
-                "/eval -- enable/disable evaluation mode: show continuations and metrics"
+                "/eval -- enable/disable evaluation mode: show continuations and metrics\n"
                 "/len x -- set the number of tokens to add when generating, default len=32\n"
                 "/p x -- set typical_p parameter for generation, 0 < p < 1,"
                         "higher p gives more random text, default p=0.5\n"
