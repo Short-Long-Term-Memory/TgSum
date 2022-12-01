@@ -14,3 +14,4 @@ dependencies:
   - pip=22.3.1 
   - pip:
     - origamibot==2.3.2
+    - bertopic==0.12.0
