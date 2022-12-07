@@ -96,7 +96,7 @@ class LM:
 
     def ids_to_text(self, ids: torch.Tensor) -> str:
         assert ids.dim() == 1
-        return self.tokenizer.decode(ids)
+        return self.tokenizer.decode(ids, skip_special_tokens = True)
 
     def emb_to_id(self, emb: torch.Tensor, metric: str = "l2") -> int:
         assert emb.dim() == 1
@@ -160,7 +160,7 @@ class LM:
             suffix = self.ids_to_text(y[i: i + 1])
             print(prefix, "|", suffix)
 
-    def generate_embs(self, input_ids, length, p):
+    def generate_ids(self, input_ids, length, p):
         return self.model.generate(
             input_ids,
             attention_mask=torch.ones_like(input_ids),
@@ -171,5 +171,5 @@ class LM:
 
     def generate_from_text(self, input_text, **kwargs):
         ids = self.text_to_ids(input_text).unsqueeze(0).to(self.device)
-        generated = self.generate_embs(ids, **kwargs)
+        generated = self.generate_ids(ids, **kwargs)
         return self.ids_to_text(generated)
