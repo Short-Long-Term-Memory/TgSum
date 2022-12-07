@@ -170,6 +170,6 @@ class LM:
         ).squeeze(0)
 
     def generate_from_text(self, input_text, **kwargs):
-        embs = self.text_to_ids(input_text).unsqueeze(0).to(self.device)
-        generated = self.generate_embs(embs, **kwargs)
+        ids = self.text_to_ids(input_text).unsqueeze(0).to(self.device)
+        generated = self.generate_embs(ids, **kwargs)
         return self.ids_to_text(generated)

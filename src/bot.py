@@ -134,7 +134,7 @@ class BotsCommands:
                     f"Summary: {summary} Text:", text
                 )
                 cont_scores = []
-                for i, cont in enumerate(conts):
+                for _, cont in enumerate(conts):
                     cont_score = self.bot.lm.loss_str(f"Summary: {summary} Text:", cont)
                     cont_scores.append(cont_score.item())
                 cont_score = sum(cont_scores) / len(cont_scores)
