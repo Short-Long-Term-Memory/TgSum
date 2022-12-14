@@ -38,7 +38,7 @@ So for a given text $O$ we can generate some continuations $T_1, \dots, T_k$ and
 $~$
 
 Finally, what language model $L$ should we take? The answer is trivial -- the better $L$ we take, the better metric we get. But it's important to note how
-important this choise is. For example, if we take GPT-2 as $L$, the resulting metric gives better scores to a prefix of the original text than to an actual
+important this choice is. For example, if we take GPT-2 as $L$, the resulting metric gives better scores to a prefix of the original text than to an actual
 summary of it (the text and the summary were taken from XSum dataset). But it we replace it with GPT-2 Medium (or Large), everything is fine. 
 Also, if the language model has small context size, or for other reasons tends to forget long-term information, this metric will favor summaries focusing on the last sentences of the text.
 
