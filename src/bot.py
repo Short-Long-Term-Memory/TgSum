@@ -1,6 +1,7 @@
 from time import sleep
 from collections import defaultdict
 from typing import Optional
+import os
 
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
@@ -57,7 +58,12 @@ class BotsCommands:
         settings["eval"] = False
 
     def collect(self, message, value: str):
-        self.bot.send_message(message.chat.id, self.__get_text(message.chat.id, value))
+        text = self.__get_text(message.chat.id, value)
+        for i in range(0, len(text), 512):
+            self.bot.send_message(
+                chat_id=message.chat.id,
+                text=text[i:i + 512]
+            )
 
     def sum(self, message):
         self.__sum(message)
@@ -119,13 +125,13 @@ class BotsCommands:
                 while not cont:
                     cont = self.bot.lm.generate_from_text(
                         text, length=text_length, p=p
-                    )[len(text):]
+                    )
                 conts.append(cont)
                 self.bot.send_message(chat, f"Continuation with p={p}:\n{cont}")
 
         for it in range(iterations):
             full = self.bot.lm.generate_from_text(prompt, length=length, p=p)
-            summary = full[len(prompt):]
+            summary = full
             self.bot.send_message(chat, f"Summary #{it + 1}:")
             self.bot.send_message(chat, summary)
             if settings["eval"]:
@@ -187,7 +193,7 @@ class MessageListener(Listener):
 def main_loop():
     token = "5935410865:AAHT5iX3iVWVogquC9m6uRu8JMZcnBxF9jc"
     topic_collector = TopicsCollector()
-    bot = TgSumBot(token, topic_collector)
+    bot = TgSumBot(token, topic_collector, model_name=os.path.join("..","baseline_models","t5-base_ft"))
     bot.add_listener(MessageListener(bot))
     bot.add_commands(BotsCommands(bot))
     bot.start()
@@ -198,7 +204,5 @@ def main_loop():
 
 if __name__ == "__main__":
     while True:
-        try:
-            main_loop()
-        except Exception as e:
-            print(e)
+        main_loop()
+
