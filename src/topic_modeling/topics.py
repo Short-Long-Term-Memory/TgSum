@@ -6,7 +6,7 @@ from nltk.corpus import stopwords
 
 class TopicsCollector:
     MIN_MSG_NUM = 10
-    def __init__(self, language: str = "english", embedding_model: str = 'distilbert-base-nli-mean-tokens'):
+    def __init__(self, language: str = "english", embedding_model: str = 'sentence-transformers/all-MiniLM-L6-v2'):
         self.emb_model = embedding_model
         self.lang = language
 
